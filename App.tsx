@@ -1,118 +1,83 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 import React from 'react';
-import type {PropsWithChildren} from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {createStackNavigator} from '@react-navigation/stack';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Text} from 'react-native';
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
+  useCreateChatClient,
+  Chat,
+  OverlayProvider,
+  ChannelList,
+} from 'stream-chat-react-native';
 import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  chatApiKey,
+  chatUserId,
+  chatUserName,
+  chatUserToken,
+} from './chatConfig';
+import {AppProvider} from './appContext';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import {StreamChat} from 'stream-chat';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const user = {
+  id: chatUserId,
+  name: chatUserName,
+};
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const Stack = createStackNavigator();
+
+const filters = {
+  members: {
+    $in: [chatUserId],
+  },
+};
+
+const sort: any = {
+  last_message_at: -1,
+};
+
+const ChannelListScreen = () => {
+  return <ChannelList filters={filters} sort={sort} />;
+};
+const NavigationStack = () => {
+  const chatClient = useCreateChatClient({
+    apiKey: chatApiKey,
+    userData: user,
+    tokenOrProvider: chatUserToken,
+  });
+
+  if (!chatClient) {
+    return (
+      <SafeAreaView>
+        <Text>Loading chat ...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+    <OverlayProvider>
+      <Chat client={chatClient}>
+        <Stack.Navigator>
+          <Stack.Screen
+            name="ChannelListScreen"
+            component={ChannelListScreen}
+          />
+        </Stack.Navigator>
+      </Chat>
+    </OverlayProvider>
   );
-}
+};
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
+export default () => {
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <AppProvider>
+      <GestureHandlerRootView style={{flex: 1}}>
+        <SafeAreaView style={{flex: 1}}>
+          <NavigationContainer>
+            <NavigationStack />
+          </NavigationContainer>
+        </SafeAreaView>
+      </GestureHandlerRootView>
+    </AppProvider>
   );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
-
-export default App;
+};
